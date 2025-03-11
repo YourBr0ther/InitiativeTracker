@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Initiative Tracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #0c2c28;
+      color: white;
+      margin: 0;
+      padding: 1rem;
+      box-sizing: border-box;
+      width: 100vw;
+      height: 100vh;
+      overflow-x: hidden;
+    }
+    table {
+      width: 100%;
+      table-layout: auto;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      max-width: 100%;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #2e4d4a;
+      font-size: 1.25rem;
+    }
+    th {
+      background-color: #19423d;
+    }
+    tr.active {
+  background-color: #2e7d69;
+  animation: pulseActive 2s infinite;
+}
+    .btn {
+      background-color: #2e7d69;
+      color: white;
+      transition: background-color 0.2s ease;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .btn:hover {
+      background-color: #256b5c;
+    }
+    .btn:active {
+      background-color: #1d594e;
+    }
+    .round-label {
+      font-weight: bold;
+      margin-left: 1rem;
+      font-size: 1.25rem;
+    }
+    .icon-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 0%;
+  object-fit: cover;
+}
+    .boss-row {
+  background-color: #8c2d1a !important;
+  font-weight: bold;
+  color: white;
+}
+.boss-row.active {
+  background-color: #a3321d !important;
+  color: white;
+}
+    #entryForm {
+      background: #13322d;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      display: none;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #entryForm label {
+      display: block;
+      margin-top: 0.5rem;
+    }
+    #entryForm input[type="text"],
+    #entryForm input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: none;
+      margin-bottom: 0.5rem;
+    }
+    #entryForm input[type="checkbox"] {
+      margin-right: 0.5rem;
+    }
+    html {
+      font-size: 20px;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+  @keyframes pulseActive {
+  0% { box-shadow: 0 0 0px rgba(46,125,105,0.6); }
+  50% { box-shadow: 0 0 12px rgba(46,125,105,0.6); }
+  100% { box-shadow: 0 0 0px rgba(46,125,105,0.6); }
+}
+</style>
+</head>
+<body>
+  <div id="entryForm">
+    <label>Initiative:<br><input type="number" id="formInitiative"></label>
+    <label>Name:<br><input type="text" id="formName"></label>
+    <label>Icon URL:<br><input type="text" id="formIcon"></label>
+    <label><input type="checkbox" id="formGroup"> Group Enemy (adds G)</label>
+    <label><input type="checkbox" id="formNPC"> NPC Character</label>
+    <label><input type="checkbox" id="formBoss"> Boss Enemy (highlighted)</label>
+    <button class="btn" onclick="submitEntryForm()">Submit Entry</button>
+    <button class="btn" onclick="toggleForm(false)">Cancel</button>
+  </div>
+
+  <table id="trackerTable">
+    <thead>
+      <tr>
+        <th>Icon</th>
+        <th>Initiative</th>
+        <th>Name</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="trackerBody"></tbody>
+  </table>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+  <div>
+    <button class="btn" onclick="toggleForm(true)">Add Entry</button>
+    <button class="btn" onclick="prevTurn()">Previous Turn</button>
+    <button class="btn" onclick="nextTurn()">Next Turn</button>
+    <button class="btn" onclick="clearAll()">Clear All</button>
+    <button class="btn" onclick="exportSession()">Export Session</button>
+    <label class="btn" style="display: inline-block;">
+      Import Session
+      <input type="file" id="importFile" onchange="importCharacters(event)" style="display:none">
+    </label>
+  </div>
+  <div class="round-label" id="roundLabel" style="margin-left:auto; text-align:right; padding: 0.5rem;">Round 1</div>
+</div>
+
+<script>
+function broadcastState() {
+  const payload = {
+    type: 'sync',
+    entries,
+    currentIndex,
+    round
+  };
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify(payload));
+  }
+}
+</script>
+<script>
+  let entries = [];
+    let currentIndex = 0;
+    let round = 1;
+let timerInterval = null;
+let timerStartTime = null;
+
+    function toggleForm(show) {
+      if (show) window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById("entryForm").style.display = show ? "block" : "none";
+    }
+
+    function submitEntryForm() {
+  const duplicateName = entries.some(e => e.name.trim().toLowerCase() === document.getElementById("formName").value.trim().toLowerCase());
+  const duplicateInit = entries.some(e => e.initiative === parseInt(document.getElementById("formInitiative").value));
+  if (duplicateName) return alert("That name already exists in the tracker.");
+  if (duplicateInit) return alert("That initiative value is already taken.");
+      const initiative = parseInt(document.getElementById("formInitiative").value);
+      let name = document.getElementById("formName").value;
+      const icon = document.getElementById("formIcon").value;
+      const isGroup = document.getElementById("formGroup").checked;
+      const isNPC = document.getElementById("formNPC").checked;
+      const isBoss = document.getElementById("formBoss").checked;
+      if (!initiative || !name) return;
+      if (isGroup) name += " (G)";
+      entries.push({ initiative, name, icon, isBoss, isNPC });
+      document.getElementById("formInitiative").value = "";
+      document.getElementById("formName").value = "";
+      document.getElementById("formIcon").value = "";
+      document.getElementById("formGroup").checked = false;
+      document.getElementById("formBoss").checked = false;
+      toggleForm(false);
+      renderTable();
+    }
+
+    function exportSession() {
+      const sessionData = { entries, currentIndex, round };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sessionData));
+      const anchor = document.createElement("a");
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", "initiative_session.json");
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function importCharacters(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data)) {
+            data.forEach(name => {
+              if (typeof name === 'object') {
+                entries.push({ initiative: 0, name: name.name || '', icon: name.icon || '', isBoss: false });
+              } else {
+                entries.push({ initiative: 0, name: name, icon: '', isBoss: false });
+              }
+            });
+          } else if (data.entries && Array.isArray(data.entries)) {
+            entries = data.entries;
+            currentIndex = typeof data.currentIndex === 'number' ? data.currentIndex : 0;
+            round = typeof data.round === 'number' ? data.round : 1;
+            document.getElementById("roundLabel").textContent = `Round ${round}`;
+          }
+          renderTable();
+        } catch (err) {
+          alert("Error parsing file. Must be a valid JSON array or session object.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function deleteEntry(index) {
+      entries.splice(index, 1);
+      renderTable();
+    }
+
+    function nextTurn() {
+  if (!entries.length) return;
+      currentIndex = (currentIndex + 1) % entries.length;
+      if (currentIndex === 0) round++;
+      document.getElementById("roundLabel").textContent = `Round ${round}`;
+      renderTable();
+    }
+
+    function prevTurn() {
+  if (!entries.length) return;if (!entries.length) return;
+      currentIndex = (currentIndex - 1 + entries.length) % entries.length;
+      if (currentIndex === entries.length - 1) round = Math.max(1, round - 1);
+      document.getElementById("roundLabel").textContent = `Round ${round}`;
+      renderTable();
+    }
+
+    function clearAll() {
+      if (!confirm("Are you absolutely sure you want to CLEAR ALL entries? This action cannot be undone.")) return;
+      entries = [];
+      currentIndex = 0;
+      round = 1;
+      document.getElementById("roundLabel").textContent = `Round ${round}`;
+      renderTable();
+    }
+
+    function toggleEdit(index) {
+      entries[index].editing = !entries[index].editing;
+      renderTable();
+    }
+
+    function renderTable() {
+  clearTimeout(timerInterval);
+  const timerDisplay = document.getElementById("timerDisplay") || createTimerDisplay();
+  timerDisplay.style.display = "none";
+  timerStartTime = Date.now();
+  checkTimer();
+      entries.sort((a, b) => b.initiative - a.initiative);
+      const tbody = document.getElementById("trackerBody");
+      tbody.innerHTML = "";
+      entries.forEach((entry, i) => {
+        const tr = document.createElement("tr");
+        if (entry.isBoss) tr.classList.add("boss-row");
+        if (i === currentIndex) {
+  tr.classList.add("active");
+  setTimeout(() => tr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
+        const tdIcon = document.createElement("td");
+        const emote = entry.isBoss ? "💀" : entry.isNPC ? "📜" : entry.name.includes("(G)") ? "👥" : "⚔️";
+        tdIcon.innerHTML = entry.icon 
+          ? `<img src='${entry.icon}' class='icon-img' alt='icon'>`
+          : `<div style='font-size: 48px; display: flex; align-items: center; justify-content: center; height: 80px; width: 80px;'>${emote}</div>`;
+
+        const tdInit = document.createElement("td");
+        const tdName = document.createElement("td");
+        const tdActions = document.createElement("td");
+
+        if (entry.editing) {
+          tdInit.innerHTML = `<input type='number' value='${entry.initiative}' onchange='entries[${i}].initiative=parseInt(this.value)' />`;
+          tdName.innerHTML = `<input type='text' value='${entry.name}' onchange='entries[${i}].name=this.value' />` +
+                             `<br><input type='text' value='${entry.icon}' onchange='entries[${i}].icon=this.value' placeholder='Icon URL'/>`;
+          tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>💾</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
+        } else {
+          tdInit.textContent = entry.initiative;
+          tdName.textContent = entry.name;
+          tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>✏️</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
+        }
+
+        tr.appendChild(tdIcon);
+        tr.appendChild(tdInit);
+        tr.appendChild(tdName);
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.addEventListener("keydown", function(e) {
+  const formVisible = document.getElementById("entryForm").style.display === "block";
+  const isEditing = document.querySelector("#trackerBody input[type='text']:focus, #trackerBody input[type='number']:focus") !== null;
+  if (!formVisible && !isEditing) {
+    if (e.code === "ArrowRight" || e.code === "Space") {
+      e.preventDefault();
+      nextTurn();
+    } else if (e.code === "ArrowLeft") {
+      e.preventDefault();
+      prevTurn();
+    }
+  }
+});
+  function createTimerDisplay() {
+  const el = document.createElement("div");
+  el.id = "timerDisplay";
+  el.style.position = "fixed";
+  el.style.bottom = "20px";
+  el.style.right = "20px";
+  el.style.background = '#1a2f2b';
+  el.style.padding = "1rem 1.5rem";
+  el.style.borderRadius = "10px";
+  el.style.fontSize = "1.25rem";
+  el.style.display = "none";
+  el.style.zIndex = "9999";
+  el.innerHTML = "⚠️ This player has had the floor for over 20 minutes!";
+  document.body.appendChild(el);
+  return el;
+}
+
+function checkTimer() {
+  const elapsed = Date.now() - timerStartTime;
+  if (elapsed >= 1200000) { // 1 minute test (60,000ms)
+    const el = document.getElementById("timerDisplay");
+    if (el) el.style.display = "block";
+  } else {
+    timerInterval = setTimeout(checkTimer, 1000);
+  }
+}
+</script>
+  
+</body>
+</html>
