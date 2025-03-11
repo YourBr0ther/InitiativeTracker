@@ -12,7 +12,6 @@ A clean, fast, and responsive initiative tracker built with HTML, CSS, and JavaS
 - 💾 Export and Import session data (JSON)
 - ⏰ 20-minute per-turn timer alert
 - 🎯 Smooth animations and scroll-to-active effect
-- 🎨 Theme-ready layout (custom color support built-in)
 
 ## 💡 How It Works
 
@@ -29,7 +28,6 @@ A clean, fast, and responsive initiative tracker built with HTML, CSS, and JavaS
 ```
 index.html        # Main application
 README.md         # You're here!
-initiative_session.json (optional)  # Save/load state
 ```
 
 ## 🚀 Usage Options
@@ -43,23 +41,6 @@ Serve with a lightweight web server:
 ```bash
 npx serve .
 ```
-
-Players can join from other devices using your IP (e.g., `http://192.168.0.X:3000`).
-
-## 🧙‍♂️ Example Use Cases
-
-- DM screen companion
-- Player-facing battle order display
-- Theater-of-the-mind sessions
-- Convention games or live-stream overlays
-
-## 📦 Future Ideas (Pull Requests Welcome!)
-
-- Add tag filters (Player/NPC/Enemy)
-- Visual initiative order ticker
-- Persistent theme selector
-- Condition tracking per row
-
 ## ⚖️ License
 
 MIT – Free to use, fork, modify, and share.
