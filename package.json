@@ -1,0 +1,12 @@
+{
+  "name": "initiative-tracker",
+  "version": "1.0.0",
+  "description": "D&D Initiative Tracker with real-time sync",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
+} 
