@@ -150,213 +150,291 @@
 </div>
 
 <script>
-function broadcastState() {
-  const payload = {
-    type: 'sync',
-    entries,
-    currentIndex,
-    round
-  };
-  if (socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify(payload));
-  }
-}
-</script>
-<script>
   let entries = [];
-    let currentIndex = 0;
-    let round = 1;
-let timerInterval = null;
-let timerStartTime = null;
+  let currentIndex = 0;
+  let round = 1;
+  let timerInterval = null;
+  let timerStartTime = null;
+  let socket = null;
+  let clientId = Math.random().toString(36).substring(2, 15);
 
-    function toggleForm(show) {
-      if (show) window.scrollTo({ top: 0, behavior: 'smooth' });
-      document.getElementById("entryForm").style.display = show ? "block" : "none";
-    }
-
-    function submitEntryForm() {
-  const duplicateName = entries.some(e => e.name.trim().toLowerCase() === document.getElementById("formName").value.trim().toLowerCase());
-  const duplicateInit = entries.some(e => e.initiative === parseInt(document.getElementById("formInitiative").value));
-  if (duplicateName) return alert("That name already exists in the tracker.");
-  if (duplicateInit) return alert("That initiative value is already taken.");
-      const initiative = parseInt(document.getElementById("formInitiative").value);
-      let name = document.getElementById("formName").value;
-      const icon = document.getElementById("formIcon").value;
-      const isGroup = document.getElementById("formGroup").checked;
-      const isNPC = document.getElementById("formNPC").checked;
-      const isBoss = document.getElementById("formBoss").checked;
-      if (!initiative || !name) return;
-      if (isGroup) name += " (G)";
-      entries.push({ initiative, name, icon, isBoss, isNPC });
-      document.getElementById("formInitiative").value = "";
-      document.getElementById("formName").value = "";
-      document.getElementById("formIcon").value = "";
-      document.getElementById("formGroup").checked = false;
-      document.getElementById("formBoss").checked = false;
-      toggleForm(false);
-      renderTable();
-    }
-
-    function exportSession() {
-      const sessionData = { entries, currentIndex, round };
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sessionData));
-      const anchor = document.createElement("a");
-      anchor.setAttribute("href", dataStr);
-      anchor.setAttribute("download", "initiative_session.json");
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-    }
-
-    function importCharacters(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (Array.isArray(data)) {
-            data.forEach(name => {
-              if (typeof name === 'object') {
-                entries.push({ initiative: 0, name: name.name || '', icon: name.icon || '', isBoss: false });
-              } else {
-                entries.push({ initiative: 0, name: name, icon: '', isBoss: false });
-              }
-            });
-          } else if (data.entries && Array.isArray(data.entries)) {
-            entries = data.entries;
-            currentIndex = typeof data.currentIndex === 'number' ? data.currentIndex : 0;
-            round = typeof data.round === 'number' ? data.round : 1;
-            document.getElementById("roundLabel").textContent = `Round ${round}`;
-          }
-          renderTable();
-        } catch (err) {
-          alert("Error parsing file. Must be a valid JSON array or session object.");
+  // Connect to WebSocket server
+  function connectWebSocket() {
+    // Get the current hostname and use it for the WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.hostname}:8080`;
+    
+    socket = new WebSocket(wsUrl);
+    
+    socket.onopen = function() {
+      console.log('Connected to server');
+      // Send initial sync request
+      broadcastState();
+    };
+    
+    socket.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'sync' && data.clientId !== clientId) {
+          entries = data.entries;
+          currentIndex = data.currentIndex;
+          round = data.round;
+          document.getElementById("roundLabel").textContent = `Round ${round}`;
+          renderTable(false); // Don't broadcast after receiving an update
         }
-      };
-      reader.readAsText(file);
+      } catch (e) {
+        console.error('Error processing message:', e);
+      }
+    };
+    
+    socket.onclose = function() {
+      console.log('Disconnected from server, attempting to reconnect...');
+      setTimeout(connectWebSocket, 3000);
+    };
+    
+    socket.onerror = function(error) {
+      console.error('WebSocket error:', error);
+    };
+  }
+
+  // Initialize connection when page loads
+  window.addEventListener('load', connectWebSocket);
+
+  function broadcastState() {
+    const payload = {
+      type: 'sync',
+      entries,
+      currentIndex,
+      round,
+      clientId
+    };
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(payload));
     }
+  }
 
-    function deleteEntry(index) {
-      entries.splice(index, 1);
-      renderTable();
-    }
+  function toggleForm(show) {
+    if (show) window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById("entryForm").style.display = show ? "block" : "none";
+  }
 
-    function nextTurn() {
-  if (!entries.length) return;
-      currentIndex = (currentIndex + 1) % entries.length;
-      if (currentIndex === 0) round++;
-      document.getElementById("roundLabel").textContent = `Round ${round}`;
-      renderTable();
-    }
+  function submitEntryForm() {
+    const duplicateName = entries.some(e => e.name.trim().toLowerCase() === document.getElementById("formName").value.trim().toLowerCase());
+    const duplicateInit = entries.some(e => e.initiative === parseInt(document.getElementById("formInitiative").value));
+    if (duplicateName) return alert("That name already exists in the tracker.");
+    if (duplicateInit) return alert("That initiative value is already taken.");
+    const initiative = parseInt(document.getElementById("formInitiative").value);
+    let name = document.getElementById("formName").value;
+    const icon = document.getElementById("formIcon").value;
+    const isGroup = document.getElementById("formGroup").checked;
+    const isNPC = document.getElementById("formNPC").checked;
+    const isBoss = document.getElementById("formBoss").checked;
+    if (!initiative || !name) return;
+    if (isGroup) name += " (G)";
+    entries.push({ initiative, name, icon, isBoss, isNPC });
+    document.getElementById("formInitiative").value = "";
+    document.getElementById("formName").value = "";
+    document.getElementById("formIcon").value = "";
+    document.getElementById("formGroup").checked = false;
+    document.getElementById("formBoss").checked = false;
+    toggleForm(false);
+    renderTable();
+  }
 
-    function prevTurn() {
-  if (!entries.length) return;if (!entries.length) return;
-      currentIndex = (currentIndex - 1 + entries.length) % entries.length;
-      if (currentIndex === entries.length - 1) round = Math.max(1, round - 1);
-      document.getElementById("roundLabel").textContent = `Round ${round}`;
-      renderTable();
-    }
+  function exportSession() {
+    const sessionData = { entries, currentIndex, round };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sessionData));
+    const anchor = document.createElement("a");
+    anchor.setAttribute("href", dataStr);
+    anchor.setAttribute("download", "initiative_session.json");
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
 
-    function clearAll() {
-      if (!confirm("Are you absolutely sure you want to CLEAR ALL entries? This action cannot be undone.")) return;
-      entries = [];
-      currentIndex = 0;
-      round = 1;
-      document.getElementById("roundLabel").textContent = `Round ${round}`;
-      renderTable();
-    }
-
-    function toggleEdit(index) {
-      entries[index].editing = !entries[index].editing;
-      renderTable();
-    }
-
-    function renderTable() {
-  clearTimeout(timerInterval);
-  const timerDisplay = document.getElementById("timerDisplay") || createTimerDisplay();
-  timerDisplay.style.display = "none";
-  timerStartTime = Date.now();
-  checkTimer();
-      entries.sort((a, b) => b.initiative - a.initiative);
-      const tbody = document.getElementById("trackerBody");
-      tbody.innerHTML = "";
-      entries.forEach((entry, i) => {
-        const tr = document.createElement("tr");
-        if (entry.isBoss) tr.classList.add("boss-row");
-        if (i === currentIndex) {
-  tr.classList.add("active");
-  setTimeout(() => tr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-}
-
-        const tdIcon = document.createElement("td");
-        const emote = entry.isBoss ? "💀" : entry.isNPC ? "📜" : entry.name.includes("(G)") ? "👥" : "⚔️";
-        tdIcon.innerHTML = entry.icon 
-          ? `<img src='${entry.icon}' class='icon-img' alt='icon'>`
-          : `<div style='font-size: 48px; display: flex; align-items: center; justify-content: center; height: 80px; width: 80px;'>${emote}</div>`;
-
-        const tdInit = document.createElement("td");
-        const tdName = document.createElement("td");
-        const tdActions = document.createElement("td");
-
-        if (entry.editing) {
-          tdInit.innerHTML = `<input type='number' value='${entry.initiative}' onchange='entries[${i}].initiative=parseInt(this.value)' />`;
-          tdName.innerHTML = `<input type='text' value='${entry.name}' onchange='entries[${i}].name=this.value' />` +
-                             `<br><input type='text' value='${entry.icon}' onchange='entries[${i}].icon=this.value' placeholder='Icon URL'/>`;
-          tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>💾</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
+  function importCharacters(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        console.log("Importing file content:", e.target.result);
+        const data = JSON.parse(e.target.result);
+        console.log("Parsed data:", data);
+        
+        if (Array.isArray(data)) {
+          // Handle array format
+          entries = [];
+          data.forEach(name => {
+            if (typeof name === 'object') {
+              entries.push({ 
+                initiative: name.initiative || 0, 
+                name: name.name || '', 
+                icon: name.icon || '', 
+                isBoss: !!name.isBoss,
+                isNPC: !!name.isNPC
+              });
+            } else {
+              entries.push({ initiative: 0, name: name, icon: '', isBoss: false, isNPC: false });
+            }
+          });
+        } else if (data.entries && Array.isArray(data.entries)) {
+          // Handle session object format
+          entries = data.entries;
+          currentIndex = typeof data.currentIndex === 'number' ? data.currentIndex : 0;
+          round = typeof data.round === 'number' ? data.round : 1;
+          document.getElementById("roundLabel").textContent = `Round ${round}`;
         } else {
-          tdInit.textContent = entry.initiative;
-          tdName.textContent = entry.name;
-          tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>✏️</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
+          // Try to handle the template directly
+          entries = [];
+          for (const key in data) {
+            if (data.hasOwnProperty(key) && data[key].entries) {
+              entries = data[key].entries;
+              currentIndex = data[key].currentIndex || 0;
+              round = data[key].round || 1;
+              document.getElementById("roundLabel").textContent = `Round ${round}`;
+              break;
+            }
+          }
         }
+        
+        // Make sure we broadcast this change to all clients
+        renderTable(true);
+        
+      } catch (err) {
+        console.error("Import error:", err, "Content:", e.target.result);
+        alert("Error parsing file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
 
-        tr.appendChild(tdIcon);
-        tr.appendChild(tdInit);
-        tr.appendChild(tdName);
-        tr.appendChild(tdActions);
-        tbody.appendChild(tr);
-      });
-    }
+  function deleteEntry(index) {
+    entries.splice(index, 1);
+    renderTable();
+  }
 
-    document.addEventListener("keydown", function(e) {
-  const formVisible = document.getElementById("entryForm").style.display === "block";
-  const isEditing = document.querySelector("#trackerBody input[type='text']:focus, #trackerBody input[type='number']:focus") !== null;
-  if (!formVisible && !isEditing) {
-    if (e.code === "ArrowRight" || e.code === "Space") {
-      e.preventDefault();
-      nextTurn();
-    } else if (e.code === "ArrowLeft") {
-      e.preventDefault();
-      prevTurn();
+  function nextTurn() {
+    if (!entries.length) return;
+    currentIndex = (currentIndex + 1) % entries.length;
+    if (currentIndex === 0) round++;
+    document.getElementById("roundLabel").textContent = `Round ${round}`;
+    renderTable();
+  }
+
+  function prevTurn() {
+    if (!entries.length) return;
+    currentIndex = (currentIndex - 1 + entries.length) % entries.length;
+    if (currentIndex === entries.length - 1) round = Math.max(1, round - 1);
+    document.getElementById("roundLabel").textContent = `Round ${round}`;
+    renderTable();
+  }
+
+  function clearAll() {
+    if (!confirm("Are you absolutely sure you want to CLEAR ALL entries? This action cannot be undone.")) return;
+    entries = [];
+    currentIndex = 0;
+    round = 1;
+    document.getElementById("roundLabel").textContent = `Round ${round}`;
+    renderTable();
+  }
+
+  function toggleEdit(index) {
+    entries[index].editing = !entries[index].editing;
+    renderTable();
+  }
+
+  function renderTable(broadcast = true) {
+    clearTimeout(timerInterval);
+    const timerDisplay = document.getElementById("timerDisplay") || createTimerDisplay();
+    timerDisplay.style.display = "none";
+    timerStartTime = Date.now();
+    checkTimer();
+    entries.sort((a, b) => b.initiative - a.initiative);
+    const tbody = document.getElementById("trackerBody");
+    tbody.innerHTML = "";
+    entries.forEach((entry, i) => {
+      const tr = document.createElement("tr");
+      if (entry.isBoss) tr.classList.add("boss-row");
+      if (i === currentIndex) {
+        tr.classList.add("active");
+        setTimeout(() => tr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      }
+
+      const tdIcon = document.createElement("td");
+      const emote = entry.isBoss ? "💀" : entry.isNPC ? "📜" : entry.name.includes("(G)") ? "👥" : "⚔️";
+      tdIcon.innerHTML = entry.icon 
+        ? `<img src='${entry.icon}' class='icon-img' alt='icon'>`
+        : `<div style='font-size: 48px; display: flex; align-items: center; justify-content: center; height: 80px; width: 80px;'>${emote}</div>`;
+
+      const tdInit = document.createElement("td");
+      const tdName = document.createElement("td");
+      const tdActions = document.createElement("td");
+
+      if (entry.editing) {
+        tdInit.innerHTML = `<input type='number' value='${entry.initiative}' onchange='entries[${i}].initiative=parseInt(this.value)' />`;
+        tdName.innerHTML = `<input type='text' value='${entry.name}' onchange='entries[${i}].name=this.value' />` +
+                           `<br><input type='text' value='${entry.icon}' onchange='entries[${i}].icon=this.value' placeholder='Icon URL'/>`;
+        tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>💾</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
+      } else {
+        tdInit.textContent = entry.initiative;
+        tdName.textContent = entry.name;
+        tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>✏️</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
+      }
+
+      tr.appendChild(tdIcon);
+      tr.appendChild(tdInit);
+      tr.appendChild(tdName);
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    });
+    
+    // Broadcast state changes to other clients
+    if (broadcast) {
+      broadcastState();
     }
   }
-});
+
+  document.addEventListener("keydown", function(e) {
+    const formVisible = document.getElementById("entryForm").style.display === "block";
+    const isEditing = document.querySelector("#trackerBody input[type='text']:focus, #trackerBody input[type='number']:focus") !== null;
+    if (!formVisible && !isEditing) {
+      if (e.code === "ArrowRight" || e.code === "Space") {
+        e.preventDefault();
+        nextTurn();
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        prevTurn();
+      }
+    }
+  });
+
   function createTimerDisplay() {
-  const el = document.createElement("div");
-  el.id = "timerDisplay";
-  el.style.position = "fixed";
-  el.style.bottom = "20px";
-  el.style.right = "20px";
-  el.style.background = '#1a2f2b';
-  el.style.padding = "1rem 1.5rem";
-  el.style.borderRadius = "10px";
-  el.style.fontSize = "1.25rem";
-  el.style.display = "none";
-  el.style.zIndex = "9999";
-  el.innerHTML = "⚠️ This player has had the floor for over 20 minutes!";
-  document.body.appendChild(el);
-  return el;
-}
-
-function checkTimer() {
-  const elapsed = Date.now() - timerStartTime;
-  if (elapsed >= 1200000) { // 1 minute test (60,000ms)
-    const el = document.getElementById("timerDisplay");
-    if (el) el.style.display = "block";
-  } else {
-    timerInterval = setTimeout(checkTimer, 1000);
+    const el = document.createElement("div");
+    el.id = "timerDisplay";
+    el.style.position = "fixed";
+    el.style.bottom = "20px";
+    el.style.right = "20px";
+    el.style.background = '#1a2f2b';
+    el.style.padding = "1rem 1.5rem";
+    el.style.borderRadius = "10px";
+    el.style.fontSize = "1.25rem";
+    el.style.display = "none";
+    el.style.zIndex = "9999";
+    el.innerHTML = "⚠️ This player has had the floor for over 20 minutes!";
+    document.body.appendChild(el);
+    return el;
   }
-}
+
+  function checkTimer() {
+    const elapsed = Date.now() - timerStartTime;
+    if (elapsed >= 1200000) { // 1 minute test (60,000ms)
+      const el = document.getElementById("timerDisplay");
+      if (el) el.style.display = "block";
+    } else {
+      timerInterval = setTimeout(checkTimer, 1000);
+    }
+  }
 </script>
   
 </body>
