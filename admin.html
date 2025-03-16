@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Initiative Tracker - Admin</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #0c2c28;
+      color: white;
+      margin: 0;
+      padding: 1rem;
+      box-sizing: border-box;
+      width: 100vw;
+      height: 100vh;
+      overflow-x: hidden;
+    }
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      max-width: 100%;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #2e4d4a;
+      font-size: 1.25rem;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    th:first-child, td:first-child {
+      width: 90px;
+    }
+    th:nth-child(2), td:nth-child(2) {
+      width: 100px;
+    }
+    th:last-child, td:last-child {
+      width: 100px;
+    }
+    th {
+      background-color: #19423d;
+    }
+    tr.active {
+      background-color: #2e7d69;
+      animation: pulseActive 2s infinite;
+    }
+    .btn {
+      background-color: #2e7d69;
+      color: white;
+      transition: all 0.2s ease;
+      padding: 0.75rem 1.25rem;
+      margin: 0;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      width: 160px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .btn:hover {
+      background-color: #256b5c;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .btn:active {
+      background-color: #1d594e;
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .round-label {
+      font-weight: bold;
+      margin-left: 1rem;
+      font-size: 1.25rem;
+    }
+    .icon-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 0%;
+      object-fit: cover;
+    }
+    .boss-row {
+      background-color: #8c2d1a !important;
+      font-weight: bold;
+      color: white;
+    }
+    .boss-row.active {
+      background-color: #a3321d !important;
+      color: white;
+    }
+    #entryForm {
+      background: #13322d;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      display: none;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #entryForm label {
+      display: block;
+      margin-top: 0.5rem;
+    }
+    #entryForm input[type="text"],
+    #entryForm input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: none;
+      margin-bottom: 0.5rem;
+    }
+    #entryForm input[type="checkbox"] {
+      margin-right: 0.5rem;
+    }
+    html {
+      font-size: 20px;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    @keyframes pulseActive {
+      0% { box-shadow: 0 0 0px rgba(46,125,105,0.6); }
+      50% { box-shadow: 0 0 12px rgba(46,125,105,0.6); }
+      100% { box-shadow: 0 0 0px rgba(46,125,105,0.6); }
+    }
+    .admin-banner {
+      background-color: #8c2d1a;
+      color: white;
+      text-align: center;
+      padding: 0.5rem;
+      margin: -1rem -1rem 1rem -1rem;
+      font-weight: bold;
+    }
+    .connection-info {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-top: 0.25rem;
+    }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Style for the import button label to match other buttons exactly */
+    label.btn {
+      margin: 0;
+      cursor: pointer;
+      overflow: hidden;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    label.btn input[type="file"] {
+      display: none;
+    }
+
+    /* Table action buttons styles */
+    td .btn {
+      width: auto;
+      min-width: 40px;
+      height: 40px;
+      padding: 0.5rem;
+      margin: 0 0.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+    }
+
+    td .btn:first-child {
+      margin-left: 0;
+    }
+
+    td .btn:last-child {
+      margin-right: 0;
+    }
+
+    /* Actions column layout */
+    td:last-child {
+      white-space: nowrap;
+      text-align: left;
+      padding: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      html {
+        font-size: 16px;
+      }
+      
+      body {
+        padding: 0.5rem;
+      }
+
+      .admin-banner {
+        padding: 1rem 0.5rem;
+      }
+
+      .connection-info {
+        font-size: 0.9rem;
+        opacity: 1;
+        padding: 0.5rem;
+        margin: 0.5rem auto;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        line-height: 1.4;
+      }
+      
+      table {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
+      
+      th, td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+
+      th:first-child, td:first-child {
+        width: 50px;
+      }
+      th:nth-child(2), td:nth-child(2) {
+        width: 60px;
+      }
+      th:last-child, td:last-child {
+        width: 85px;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 0.75rem 0.5rem;
+      }
+      
+      .icon-img {
+        width: 40px;
+        height: 40px;
+      }
+      
+      td div[style*="font-size: 48px"] {
+        font-size: 24px !important;
+        height: 40px !important;
+        width: 40px !important;
+      }
+      
+      .button-group {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        width: 100%;
+      }
+
+      .btn {
+        width: 100%;
+        height: 48px;
+        padding: 0.75rem;
+        margin: 0;
+        font-size: 0.9rem;
+        min-width: 44px;
+      }
+
+      td .btn {
+        width: auto;
+        min-width: 36px;
+        height: 36px;
+        padding: 0.5rem;
+        margin: 0 0.25rem;
+      }
+      
+      #timerDisplay {
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        text-align: center;
+        font-size: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-banner">
+    ADMIN CONTROL PANEL
+    <div class="connection-info" id="connectionInfo">Loading connection information...</div>
+  </div>
+  
+  <div id="entryForm">
+    <label>Initiative:<br><input type="number" id="formInitiative"></label>
+    <label>Name:<br><input type="text" id="formName"></label>
+    <label>Icon URL:<br><input type="text" id="formIcon"></label>
+    <label><input type="checkbox" id="formGroup"> Group Enemy (adds G)</label>
+    <label><input type="checkbox" id="formNPC"> NPC Character</label>
+    <label><input type="checkbox" id="formBoss"> Boss Enemy (highlighted)</label>
+    <div class="button-group">
+      <button class="btn" onclick="submitEntryForm()">Submit Entry</button>
+      <button class="btn" onclick="toggleForm(false)">Cancel</button>
+    </div>
+  </div>
+
+  <table id="trackerTable">
+    <thead>
+      <tr>
+        <th>Icon</th>
+        <th>Initiative</th>
+        <th>Name</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="trackerBody"></tbody>
+  </table>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    <div class="button-group">
+      <button class="btn" onclick="toggleForm(true)">Add Entry</button>
+      <button class="btn" onclick="nextTurn()">Next Turn</button>
+      <button class="btn" onclick="prevTurn()">Previous Turn</button>
+      <button class="btn" onclick="clearAll()">Clear All</button>
+      <button class="btn" onclick="exportSession()">Export Session</button>
+      <label class="btn" for="importFile">
+        Import Session
+        <input type="file" id="importFile" accept=".json" onchange="importCharacters(event)">
+      </label>
+    </div>
+    <div class="round-label" id="roundLabel">Round 1</div>
+  </div>
+
+  <script>
+    let entries = [];
+    let currentIndex = 0;
+    let round = 1;
+    let timerInterval = null;
+    let timerStartTime = null;
+    let socket = null;
+    let clientId = Math.random().toString(36).substring(2, 15);
+
+    // Connect to WebSocket server
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.hostname}:8080/admin`;
+      
+      socket = new WebSocket(wsUrl);
+      
+      socket.onopen = function() {
+        console.log('Connected to server as admin');
+        broadcastState();
+      };
+      
+      socket.onmessage = function(event) {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'sync' && data.clientId !== clientId) {
+            entries = data.entries;
+            currentIndex = data.currentIndex;
+            round = data.round;
+            document.getElementById("roundLabel").textContent = `Round ${round}`;
+            renderTable(false);
+          }
+        } catch (e) {
+          console.error('Error processing message:', e);
+        }
+      };
+      
+      socket.onclose = function() {
+        console.log('Disconnected from server, attempting to reconnect...');
+        setTimeout(connectWebSocket, 3000);
+      };
+      
+      socket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+      };
+    }
+
+    window.addEventListener('load', () => {
+      loadFromLocalStorage();
+      connectWebSocket();
+    });
+
+    function broadcastState() {
+      const payload = {
+        type: 'sync',
+        entries,
+        currentIndex,
+        round,
+        clientId
+      };
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(payload));
+      }
+    }
+
+    function toggleForm(show) {
+      if (show) window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById("entryForm").style.display = show ? "block" : "none";
+    }
+
+    function submitEntryForm() {
+      const duplicateName = entries.some(e => e.name.trim().toLowerCase() === document.getElementById("formName").value.trim().toLowerCase());
+      const duplicateInit = entries.some(e => e.initiative === parseInt(document.getElementById("formInitiative").value));
+      if (duplicateName) return alert("That name already exists in the tracker.");
+      if (duplicateInit) return alert("That initiative value is already taken.");
+      const initiative = parseInt(document.getElementById("formInitiative").value);
+      let name = document.getElementById("formName").value;
+      const icon = document.getElementById("formIcon").value;
+      const isGroup = document.getElementById("formGroup").checked;
+      const isNPC = document.getElementById("formNPC").checked;
+      const isBoss = document.getElementById("formBoss").checked;
+      if (!initiative || !name) return;
+      if (isGroup) name += " (G)";
+      entries.push({ initiative, name, icon, isBoss, isNPC });
+      document.getElementById("formInitiative").value = "";
+      document.getElementById("formName").value = "";
+      document.getElementById("formIcon").value = "";
+      document.getElementById("formGroup").checked = false;
+      document.getElementById("formBoss").checked = false;
+      toggleForm(false);
+      renderTable();
+    }
+
+    function exportSession() {
+      const sessionData = { entries, currentIndex, round };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sessionData));
+      const anchor = document.createElement("a");
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", "initiative_session.json");
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function importCharacters(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          
+          // Handle session data format
+          if (data.entries && Array.isArray(data.entries)) {
+            entries = data.entries;
+            currentIndex = data.currentIndex || 0;
+            round = data.round || 1;
+          }
+          // Handle simple array format
+          else if (Array.isArray(data)) {
+            entries = data.map(item => {
+              if (typeof item === 'object') {
+                return {
+                  initiative: item.initiative || 0,
+                  name: item.name || '',
+                  icon: item.icon || '',
+                  isBoss: !!item.isBoss,
+                  isNPC: !!item.isNPC
+                };
+              }
+              return {
+                initiative: 0,
+                name: String(item),
+                icon: '',
+                isBoss: false,
+                isNPC: false
+              };
+            });
+            currentIndex = 0;
+            round = 1;
+          }
+          // Handle legacy format
+          else {
+            for (const key in data) {
+              if (data.hasOwnProperty(key) && data[key].entries) {
+                entries = data[key].entries;
+                currentIndex = data[key].currentIndex || 0;
+                round = data[key].round || 1;
+                break;
+              }
+            }
+          }
+
+          // Update round label
+          document.getElementById("roundLabel").textContent = `Round ${round}`;
+          
+          // Clear the file input for future imports
+          event.target.value = '';
+          
+          // Render the table and broadcast changes
+          renderTable(true);
+          
+        } catch (err) {
+          console.error("Import error:", err);
+          alert("Error importing file. Please make sure it's a valid initiative tracker file.");
+          event.target.value = '';
+        }
+      };
+      
+      reader.onerror = function() {
+        alert("Error reading file");
+        event.target.value = '';
+      };
+      
+      reader.readAsText(file);
+    }
+
+    function deleteEntry(index) {
+      entries.splice(index, 1);
+      
+      if (entries.length === 0) {
+        currentIndex = 0;
+        
+        clearTimeout(timerInterval);
+        timerInterval = null;
+        timerStartTime = null;
+        
+        const timerDisplay = document.getElementById("timerDisplay");
+        if (timerDisplay) timerDisplay.style.display = "none";
+      } else if (index <= currentIndex) {
+        currentIndex = Math.min(currentIndex, entries.length - 1);
+      }
+      
+      renderTable();
+    }
+
+    function nextTurn() {
+      if (!entries.length) return;
+      currentIndex = (currentIndex + 1) % entries.length;
+      if (currentIndex === 0) round++;
+      document.getElementById("roundLabel").textContent = `Round ${round}`;
+      renderTable();
+    }
+
+    function prevTurn() {
+      if (!entries.length) return;
+      currentIndex = (currentIndex - 1 + entries.length) % entries.length;
+      if (currentIndex === entries.length - 1) round = Math.max(1, round - 1);
+      document.getElementById("roundLabel").textContent = `Round ${round}`;
+      renderTable();
+    }
+
+    function clearAll() {
+      if (!confirm("Are you absolutely sure you want to CLEAR ALL entries? This action cannot be undone.")) return;
+      entries = [];
+      currentIndex = 0;
+      round = 1;
+      document.getElementById("roundLabel").textContent = `Round ${round}`;
+      
+      clearTimeout(timerInterval);
+      timerInterval = null;
+      timerStartTime = null;
+      
+      const timerDisplay = document.getElementById("timerDisplay");
+      if (timerDisplay) timerDisplay.style.display = "none";
+      
+      localStorage.removeItem('initiativeTrackerState');
+      renderTable();
+    }
+
+    function toggleEdit(index) {
+      entries[index].editing = !entries[index].editing;
+      renderTable();
+    }
+
+    function renderTable(broadcast = true) {
+      clearTimeout(timerInterval);
+      const timerDisplay = document.getElementById("timerDisplay") || createTimerDisplay();
+      timerDisplay.style.display = "none";
+      
+      if (entries.length > 0) {
+        timerStartTime = Date.now();
+        checkTimer();
+      } else {
+        timerStartTime = null;
+        timerInterval = null;
+      }
+      
+      entries.sort((a, b) => b.initiative - a.initiative);
+      const tbody = document.getElementById("trackerBody");
+      tbody.innerHTML = "";
+      entries.forEach((entry, i) => {
+        const tr = document.createElement("tr");
+        if (entry.isBoss) tr.classList.add("boss-row");
+        if (i === currentIndex) {
+          tr.classList.add("active");
+          setTimeout(() => tr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
+
+        const tdIcon = document.createElement("td");
+        const emote = entry.isBoss ? "💀" : entry.isNPC ? "📜" : entry.name.includes("(G)") ? "👥" : "⚔️";
+        tdIcon.innerHTML = entry.icon 
+          ? `<img src='${entry.icon}' class='icon-img' alt='icon'>`
+          : `<div style='font-size: 48px; display: flex; align-items: center; justify-content: center; height: 80px; width: 80px;'>${emote}</div>`;
+
+        const tdInit = document.createElement("td");
+        const tdName = document.createElement("td");
+        const tdActions = document.createElement("td");
+
+        if (entry.editing) {
+          tdInit.innerHTML = `<input type='number' value='${entry.initiative}' onchange='entries[${i}].initiative=parseInt(this.value)' />`;
+          tdName.innerHTML = `<input type='text' value='${entry.name}' onchange='entries[${i}].name=this.value' />` +
+                           `<br><input type='text' value='${entry.icon}' onchange='entries[${i}].icon=this.value' placeholder='Icon URL'/>`;
+          tdActions.innerHTML = `<button class='btn' onclick='toggleEdit(${i})'>💾</button><button class='btn' onclick='deleteEntry(${i})'>❌</button>`;
+        } else {
+          tdInit.textContent = entry.initiative;
+          tdName.textContent = entry.name;
+          tdActions.innerHTML = `<button class='btn' onclick='toggleEdit(${i})'>✏️</button><button class='btn' onclick='deleteEntry(${i})'>❌</button>`;
+        }
+
+        tr.appendChild(tdIcon);
+        tr.appendChild(tdInit);
+        tr.appendChild(tdName);
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+      });
+      
+      if (broadcast) {
+        broadcastState();
+        saveToLocalStorage();
+      }
+    }
+
+    document.addEventListener("keydown", function(e) {
+      const formVisible = document.getElementById("entryForm").style.display === "block";
+      const isEditing = document.querySelector("#trackerBody input[type='text']:focus, #trackerBody input[type='number']:focus") !== null;
+      if (!formVisible && !isEditing) {
+        if (e.code === "ArrowRight" || e.code === "Space") {
+          e.preventDefault();
+          nextTurn();
+        } else if (e.code === "ArrowLeft") {
+          e.preventDefault();
+          prevTurn();
+        }
+      }
+    });
+
+    function createTimerDisplay() {
+      const el = document.createElement("div");
+      el.id = "timerDisplay";
+      el.style.position = "fixed";
+      el.style.bottom = "20px";
+      el.style.right = "20px";
+      el.style.background = '#1a2f2b';
+      el.style.padding = "1rem 1.5rem";
+      el.style.borderRadius = "10px";
+      el.style.fontSize = "1.25rem";
+      el.style.display = "none";
+      el.style.zIndex = "9999";
+      el.innerHTML = "⚠️ This player has had the floor for over 20 minutes!";
+      document.body.appendChild(el);
+      return el;
+    }
+
+    function checkTimer() {
+      if (!timerStartTime || entries.length === 0) {
+        return;
+      }
+      
+      const elapsed = Date.now() - timerStartTime;
+      if (elapsed >= 1200000) { // 20 minutes (1,200,000ms)
+        const el = document.getElementById("timerDisplay");
+        if (el) el.style.display = "block";
+      } else {
+        timerInterval = setTimeout(checkTimer, 1000);
+      }
+    }
+
+    // Network info display
+    fetch('/network-info')
+      .then(response => response.json())
+      .then(data => {
+        const addresses = data.addresses;
+        const port = data.port;
+        let infoHtml = '<span style="font-size: 1.1rem; font-weight: bold;">Players can connect using:</span><br>';
+        const networkAddresses = addresses.filter(addr => addr !== 'localhost' && addr !== '127.0.0.1');
+        
+        if (networkAddresses.length > 0) {
+          networkAddresses.forEach(addr => {
+            infoHtml += `<span style="font-size: 1.2rem; font-weight: bold; color: #4affe3;">http://${addr}:${port}</span><br>`;
+          });
+        } else {
+          infoHtml += '<span style="color: #ff6b6b;">No network addresses found. Only localhost is available.</span>';
+        }
+        
+        document.getElementById('connectionInfo').innerHTML = infoHtml;
+      })
+      .catch(error => {
+        console.error('Error fetching network info:', error);
+        document.getElementById('connectionInfo').textContent = 'Error loading connection information';
+      });
+
+    // Save state to local storage
+    function saveToLocalStorage() {
+      const state = {
+        entries,
+        currentIndex,
+        round,
+        lastUpdate: Date.now()
+      };
+      localStorage.setItem('initiativeTrackerState', JSON.stringify(state));
+    }
+
+    // Load state from local storage
+    function loadFromLocalStorage() {
+      const savedState = localStorage.getItem('initiativeTrackerState');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          // Only restore if the state is less than 24 hours old
+          if (Date.now() - state.lastUpdate < 24 * 60 * 60 * 1000) {
+            entries = state.entries;
+            currentIndex = state.currentIndex;
+            round = state.round;
+            document.getElementById("roundLabel").textContent = `Round ${round}`;
+            renderTable(true);
+          }
+        } catch (err) {
+          console.error('Error loading saved state:', err);
+        }
+      }
+    }
+
+    // Save state before unload
+    window.addEventListener('beforeunload', saveToLocalStorage);
+  </script>
+</body>
+</html> 
