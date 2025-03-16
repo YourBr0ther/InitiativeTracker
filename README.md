@@ -1,84 +1,78 @@
-# D&D Initiative Tracker
+# Initiative Tracker
 
-A clean, fast, and responsive initiative tracker built with HTML, CSS, and JavaScript — perfect for tabletop RPGs like Dungeons & Dragons. Now with real-time synchronization across multiple devices!
+A real-time initiative tracking system for tabletop role-playing games, designed to be accessible across multiple devices on a local network.
 
-## ✨ Features
+## Features
 
-- 🎲 Add players, NPCs, groups, and bosses
-- 📸 Supports image icons or automatic emote fallbacks (⚔️, 📜, 👥, 💀)
-- 🔥 Auto-sort by initiative
-- ✏️ Inline editing of initiative, name, and icon
-- ⌨️ Keyboard control (Space / Arrows to advance turns)
-- 💾 Export and Import session data (JSON)
-- ⏰ 20-minute per-turn timer alert
-- 🎯 Smooth animations and scroll-to-active effect
-- 🌐 **Real-time sync across multiple devices on the same network**
+- **Real-time Updates**: Changes sync instantly across all connected devices
+- **Dual Interface**:
+  - Admin view (`/admin`) for game masters to manage the initiative order
+  - Player view (`/`) for players to follow combat
+- **Persistence**: State survives page refreshes and reconnections
+- **Mobile Responsive**: Works on both desktop and mobile devices
+- **Combat Management**:
+  - Track initiative order
+  - Mark boss enemies
+  - Designate NPCs and group enemies
+  - Round counter
+  - 20-minute turn timer
+- **Session Management**:
+  - Export/Import session data
+  - Clear all functionality
+  - Edit entries on the fly
 
-## 💡 How It Works
+## Setup
 
-- Click **Add Entry** to start building your tracker.
-- Entries can be **Players, Groups, Bosses, or NPCs** with different visual indicators.
-- Edit any row live using ✏️, save using 💾, or delete ❌.
-- The table auto-sorts by initiative each time.
-- Changes made on any connected device will instantly sync to all others!
-- **Keyboard Shortcuts:**
-  - ▶️ **Space / Right Arrow**: Next Turn
-  - ◀️ **Left Arrow**: Previous Turn
+1. Install Node.js if you haven't already
+2. Clone this repository
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Start the server:
+   ```bash
+   node server.js
+   ```
+5. The server will display available IP addresses. Players can connect using any of these addresses.
 
-## 🔄 Network Synchronization
+## Usage
 
-The tracker uses WebSockets to provide real-time synchronization:
+### Admin Interface (Game Master)
+- Access via `http://[YOUR-IP]:8080/admin`
+- Features:
+  - Add new entries with initiative, name, and optional icon
+  - Mark entries as Boss, NPC, or Group
+  - Edit or delete entries
+  - Control turn order
+  - Export/Import session data
+  - Clear all entries
+  - View 20-minute turn timer
 
-- All connected devices see the same initiative order
-- Turn changes are synchronized across all screens
-- Adding, editing, or removing entries updates all connected devices
-- Each client has a unique ID to prevent echo effects
-- Automatic reconnection if the connection is lost
+### Player Interface
+- Access via `http://[YOUR-IP]:8080`
+- Features:
+  - View current initiative order
+  - See active character
+  - View round number
+  - Auto-scrolls to current character
 
-## 📁 Files
+### Controls
+- **Next Turn**: Click 'Next Turn' or press Right Arrow/Space
+- **Previous Turn**: Click 'Previous Turn' or press Left Arrow
+- **Add Entry**: Click 'Add Entry' and fill in the form
+- **Edit Entry**: Click the pencil icon (✏️) next to an entry
+- **Delete Entry**: Click the X icon (❌) next to an entry
 
-```
-index.html        # Main application
-server.js         # WebSocket server for real-time sync
-package.json      # Node.js dependencies
-Template.json     # Sample character template for import
-README.md         # You're here!
-```
+## Technical Details
 
-## 🚀 Usage Options
+- Built with vanilla JavaScript
+- Uses WebSocket for real-time communication
+- Local storage for state persistence
+- Node.js backend with ws library
+- Responsive design with CSS media queries
 
-### Option 1: Local Browser Use (No Sync)
-Just open `index.html` in any modern browser.
+## Network Requirements
 
-### Option 2: Host on Local Network with Real-time Sync
-1. Install Node.js if you don't have it already
-2. Run these commands in the project directory:
-
-```bash
-npm install
-npm start
-```
-
-3. Access the tracker from any device on your network at:
-   `http://[YOUR_COMPUTER_IP]:8080`
-
-4. Changes made on any connected device will sync to all others in real-time!
-
-## 💾 Import/Export
-
-- **Export Session**: Saves the current state (characters, initiative, current turn, round) as a JSON file
-- **Import Session**: Load a previously exported session or a character template
-- The included `Template.json` file can be used as a starting point for your campaign
-
-## 🎮 DM Tips
-
-- Use boss highlighting (red background) for important enemies
-- Group similar enemies with the (G) tag for cleaner tracking
-- Use the NPC tag for friendly non-player characters
-- The 20-minute timer helps keep combat moving
-
-## ⚖️ License
-
-MIT – Free to use, fork, modify, and share.
-
-> May your turns be fast and your crits be high!
+- Requires all devices to be on the same local network
+- Server runs on port 8080
+- WebSocket connections use the same port
