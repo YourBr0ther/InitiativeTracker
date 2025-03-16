@@ -1,7 +1,7 @@
 {
   "name": "initiative-tracker",
   "version": "1.0.0",
-  "description": "D&D Initiative Tracker with real-time sync",
+  "description": "D&D Initiative Tracker with WebSocket support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
