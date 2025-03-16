@@ -2,12 +2,44 @@ const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+
+// Get all network interfaces
+function getNetworkAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  
+  for (const interfaceName in interfaces) {
+    const interface = interfaces[interfaceName];
+    for (const entry of interface) {
+      // Skip internal and non-IPv4 addresses
+      if (!entry.internal && entry.family === 'IPv4') {
+        addresses.push(entry.address);
+      }
+    }
+  }
+  return addresses;
+}
 
 // Create HTTP server to serve static files
 const server = http.createServer((req, res) => {
-  let filePath = '.' + req.url;
-  if (filePath === './') {
-    filePath = './index.html';
+  let filePath = '.';
+  
+  // Route handling
+  if (req.url === '/') {
+    filePath += '/index.html';
+  } else if (req.url === '/admin') {
+    filePath += '/admin.html';
+  } else if (req.url === '/network-info') {
+    // Endpoint to get network information
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      addresses: getNetworkAddresses(),
+      port: PORT
+    }));
+    return;
+  } else {
+    filePath += req.url;
   }
 
   const extname = path.extname(filePath);
@@ -54,30 +86,51 @@ const wss = new WebSocket.Server({ server });
 const clients = new Set();
 
 // Handle WebSocket connections
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  // Check if the connection is from admin
+  const isAdmin = req.url === '/admin';
+  ws.isAdmin = isAdmin;
+  
   clients.add(ws);
-  console.log('Client connected. Total clients:', clients.size);
+  console.log(`${isAdmin ? 'Admin' : 'User'} connected. Total clients:`, clients.size);
 
   // Handle messages from clients
   ws.on('message', (message) => {
-    // Broadcast the message to all connected clients
-    clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message.toString());
+    try {
+      const data = JSON.parse(message);
+      
+      // Only allow state updates from admin connections
+      if (data.type === 'sync' && (!ws.isAdmin)) {
+        return;
       }
-    });
+      
+      // Broadcast the message to all connected clients
+      clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message.toString());
+        }
+      });
+    } catch (e) {
+      console.error('Error processing message:', e);
+    }
   });
 
   // Handle client disconnection
   ws.on('close', () => {
     clients.delete(ws);
-    console.log('Client disconnected. Total clients:', clients.size);
+    console.log(`${ws.isAdmin ? 'Admin' : 'User'} disconnected. Total clients:`, clients.size);
   });
 });
 
 // Start the server
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`WebSocket server running on ws://localhost:${PORT}`);
+  console.log('\nServer running on the following addresses:');
+  getNetworkAddresses().forEach(addr => {
+    console.log(`http://${addr}:${PORT}`);
+    console.log(`http://${addr}:${PORT}/admin`);
+  });
+  console.log('\nLocal access:');
+  console.log(`http://localhost:${PORT}`);
+  console.log(`http://localhost:${PORT}/admin`);
 }); 
