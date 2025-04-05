@@ -3,167 +3,217 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Initiative Tracker - View Only</title>
+  <title>Initiative Tracker</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background-color: #0c2c28;
-      color: white;
-      margin: 0;
-      padding: 1rem;
-      box-sizing: border-box;
-      width: 100vw;
-      height: 100vh;
-      overflow-x: hidden;
+    :root {
+      --primary-bg: #0f172a;
+      --secondary-bg: #1e293b;
+      --accent-color: #38bdf8;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --boss-color: #dc2626;
+      --active-color: #0ea5e9;
+      --border-color: #334155;
+      --tie-color: #fbbf24;
     }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--primary-bg), var(--secondary-bg));
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      padding: 1rem;
+    }
+
+    .view-banner {
+      background: linear-gradient(to right, var(--accent-color), #0284c7);
+      color: var(--text-primary);
+      text-align: center;
+      padding: 1rem;
+      margin: -1rem -1rem 1.5rem -1rem;
+      font-weight: 600;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .connection-info {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      backdrop-filter: blur(8px);
+    }
+
     table {
       width: 100%;
-      table-layout: auto;
-      border-collapse: collapse;
-      margin-bottom: 1rem;
-      max-width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 1rem 0;
+      background: var(--secondary-bg);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    th, td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #2e4d4a;
-      font-size: 1.25rem;
-    }
+
     th {
-      background-color: #19423d;
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      padding: 1rem;
+      text-align: left;
     }
-    tr.active {
-      background-color: #2e7d69;
-      animation: pulseActive 2s infinite;
-    }
-    .round-label {
-      font-weight: bold;
-      margin-left: 1rem;
+
+    td {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+      transition: all 0.2s ease;
       font-size: 1.25rem;
     }
-    .icon-img {
-      width: 80px;
-      height: 80px;
-      border-radius: 0%;
-      object-fit: cover;
+
+    tr {
+      transition: all 0.3s ease;
     }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    tr.active {
+      background: linear-gradient(to right, var(--active-color), rgba(14, 165, 233, 0.2));
+      position: relative;
+    }
+
+    tr.active::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background: var(--accent-color);
+    }
+
     .boss-row {
-      background-color: #8c2d1a !important;
-      font-weight: bold;
-      color: white;
+      background: linear-gradient(to right, var(--boss-color), rgba(220, 38, 38, 0.1)) !important;
     }
-    .boss-row.active {
-      background-color: #a3321d !important;
-      color: white;
+
+    .icon-img {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 1rem;
+      object-fit: cover;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    html {
-      font-size: 20px;
+
+    .name-cell {
+      font-weight: 600;
+      font-size: 1.5rem;
     }
-    h1 {
-      font-size: 2rem;
-    }
-    @keyframes pulseActive {
-      0% { box-shadow: 0 0 0px rgba(46,125,105,0.6); }
-      50% { box-shadow: 0 0 12px rgba(46,125,105,0.6); }
-      100% { box-shadow: 0 0 0px rgba(46,125,105,0.6); }
-    }
-    .view-banner {
-      background-color: #2e7d69;
-      color: white;
+
+    .initiative-cell {
+      font-size: 1.75rem;
+      font-weight: 700;
       text-align: center;
-      padding: 0.5rem;
-      margin: -1rem -1rem 1rem -1rem;
-      font-weight: bold;
+      color: var(--accent-color);
     }
-    .connection-info {
-      font-size: 0.8rem;
-      opacity: 0.8;
+
+    .round-label {
+      display: inline-block;
+      background: var(--secondary-bg);
+      color: var(--accent-color);
+      padding: 0.75rem 1.5rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 1.5rem;
+      margin: 1rem 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+    }
+
+    .tie-indicator {
+      border-left: 4px solid var(--tie-color);
+    }
+
+    .dex-mod {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
       margin-top: 0.25rem;
     }
-    .admin-link {
-      position: fixed;
-      bottom: 1rem;
-      right: 1rem;
-      color: #2e7d69;
-      text-decoration: none;
-      font-size: 0.8rem;
-      opacity: 0.7;
+
+    .emoji-icon {
+      font-size: 2.25rem;
+      width: 4.5rem;
+      height: 4.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
     }
-    .admin-link:hover {
-      opacity: 1;
-    }
-    
+
     @media (max-width: 768px) {
-      html {
-        font-size: 16px;
-      }
-      
       body {
         padding: 0.5rem;
       }
 
       .view-banner {
-        padding: 1rem 0.5rem;
-      }
-
-      .connection-info {
-        font-size: 0.9rem;
-        opacity: 1;
-        padding: 0.5rem;
-        margin: 0.5rem auto;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-        line-height: 1.4;
-      }
-      
-      table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        margin-bottom: 0.5rem;
-      }
-      
-      th, td {
-        padding: 0.5rem;
-        font-size: 0.9rem;
-      }
-
-      th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        padding: 0.75rem 0.5rem;
-      }
-      
-      .icon-img {
-        width: 40px;
-        height: 40px;
-      }
-      
-      td div[style*="font-size: 48px"] {
-        font-size: 24px !important;
-        height: 40px !important;
-        width: 40px !important;
-      }
-      
-      .round-label {
-        text-align: center;
-        margin: 0.5rem 0;
-        font-size: 1.25rem;
-        padding: 0.5rem;
-        background: rgba(46, 125, 105, 0.2);
-        border-radius: 4px;
-        width: 100%;
-      }
-      
-      .admin-link {
-        bottom: 0.5rem;
-        right: 0.5rem;
         padding: 0.75rem;
-        background: rgba(46, 125, 105, 0.1);
-        border-radius: 4px;
-        font-size: 0.9rem;
+        margin: -0.5rem -0.5rem 1rem -0.5rem;
       }
+
+      table {
+        font-size: 0.875rem;
+        border-radius: 0.75rem;
+      }
+
+      th, td {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+
+      .name-cell {
+        font-size: 1.25rem;
+      }
+
+      .initiative-cell {
+        font-size: 1.5rem;
+      }
+
+      .icon-img, .emoji-icon {
+        width: 3.5rem;
+        height: 3.5rem;
+      }
+
+      .round-label {
+        font-size: 1.25rem;
+        padding: 0.5rem 1rem;
+      }
+
+      .emoji-icon {
+        font-size: 1.75rem;
+      }
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+    }
+
+    .active .icon-img, .active .emoji-icon {
+      animation: pulse 2s infinite;
     }
   </style>
 </head>
@@ -173,42 +223,20 @@
     <div class="connection-info" id="connectionInfo">Connected to server</div>
   </div>
 
-  <script>
-    // Network info display
-    fetch('/network-info')
-      .then(response => response.json())
-      .then(data => {
-        const addresses = data.addresses;
-        const port = data.port;
-        let currentHost = window.location.hostname;
-        // If we're on localhost, show the first available network IP instead
-        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-          currentHost = addresses.find(addr => addr !== 'localhost' && addr !== '127.0.0.1') || currentHost;
-        }
-        document.getElementById('connectionInfo').innerHTML = `<span style="font-size: 1.1rem;">Connected to: http://${currentHost}:${port}</span>`;
-      })
-      .catch(error => {
-        console.error('Error fetching network info:', error);
-        document.getElementById('connectionInfo').textContent = 'Error loading connection information';
-      });
-  </script>
-
   <table id="trackerTable">
     <thead>
       <tr>
         <th>Icon</th>
-        <th>Initiative</th>
         <th>Name</th>
+        <th>Initiative</th>
       </tr>
     </thead>
     <tbody id="trackerBody"></tbody>
   </table>
 
-  <div style="display: flex; justify-content: space-between; align-items: center;">
+  <div style="text-align: center;">
     <div class="round-label" id="roundLabel">Round 1</div>
   </div>
-
-  <a href="/admin" class="admin-link">Admin Access</a>
 
   <script>
     let entries = [];
@@ -217,61 +245,26 @@
     let socket = null;
     let clientId = Math.random().toString(36).substring(2, 15);
 
-    // Save state to local storage
-    function saveToLocalStorage() {
-      const state = {
-        entries,
-        currentIndex,
-        round,
-        lastUpdate: Date.now()
-      };
-      localStorage.setItem('initiativeTrackerState', JSON.stringify(state));
-    }
-
-    // Load state from local storage
-    function loadFromLocalStorage() {
-      const savedState = localStorage.getItem('initiativeTrackerState');
-      if (savedState) {
-        try {
-          const state = JSON.parse(savedState);
-          // Only restore if the state is less than 24 hours old
-          if (Date.now() - state.lastUpdate < 24 * 60 * 60 * 1000) {
-            entries = state.entries;
-            currentIndex = state.currentIndex;
-            round = state.round;
-            document.getElementById("roundLabel").textContent = `Round ${round}`;
-            renderTable();
-          }
-        } catch (err) {
-          console.error('Error loading saved state:', err);
-        }
-      }
-    }
-
-    // Save state before unload
-    window.addEventListener('beforeunload', saveToLocalStorage);
-
     // Connect to WebSocket server
     function connectWebSocket() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:8080`;
+      const wsUrl = `${protocol}//${window.location.hostname}:8080/`;
       
       socket = new WebSocket(wsUrl);
       
       socket.onopen = function() {
-        console.log('Connected to server as viewer');
+        console.log('Connected to server');
       };
       
       socket.onmessage = function(event) {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'sync' && data.clientId !== clientId) {
+          if (data.type === 'sync') {
             entries = data.entries;
             currentIndex = data.currentIndex;
             round = data.round;
             document.getElementById("roundLabel").textContent = `Round ${round}`;
             renderTable();
-            saveToLocalStorage(); // Save state when we receive updates
           }
         } catch (e) {
           console.error('Error processing message:', e);
@@ -288,16 +281,12 @@
       };
     }
 
-    // Load saved state and then connect to WebSocket
-    window.addEventListener('load', () => {
-      loadFromLocalStorage();
-      connectWebSocket();
-    });
+    window.addEventListener('load', connectWebSocket);
 
     function renderTable() {
-      entries.sort((a, b) => b.initiative - a.initiative);
       const tbody = document.getElementById("trackerBody");
       tbody.innerHTML = "";
+      
       entries.forEach((entry, i) => {
         const tr = document.createElement("tr");
         if (entry.isBoss) tr.classList.add("boss-row");
@@ -306,24 +295,49 @@
           setTimeout(() => tr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
         }
 
+        // Add visual indicator for initiative ties
+        const hasTie = entries.filter(e => e.initiative === entry.initiative && e.initiative !== 0).length > 1;
+        if (hasTie) {
+          tr.classList.add("tie-indicator");
+        }
+
         const tdIcon = document.createElement("td");
         const emote = entry.isBoss ? "💀" : entry.isNPC ? "📜" : entry.name.includes("(G)") ? "👥" : "⚔️";
         tdIcon.innerHTML = entry.icon 
           ? `<img src='${entry.icon}' class='icon-img' alt='icon'>`
-          : `<div style='font-size: 48px; display: flex; align-items: center; justify-content: center; height: 80px; width: 80px;'>${emote}</div>`;
+          : `<div class='emoji-icon'>${emote}</div>`;
 
-        const tdInit = document.createElement("td");
         const tdName = document.createElement("td");
-
-        tdInit.textContent = entry.initiative;
+        tdName.className = "name-cell";
         tdName.textContent = entry.name;
 
+        const tdInit = document.createElement("td");
+        tdInit.className = "initiative-cell";
+        tdInit.innerHTML = `${entry.initiative}${entry.initiative !== 0 && hasTie ? `<div class="dex-mod">DEX: ${entry.dexMod || 0}</div>` : ''}`;
+
         tr.appendChild(tdIcon);
-        tr.appendChild(tdInit);
         tr.appendChild(tdName);
+        tr.appendChild(tdInit);
         tbody.appendChild(tr);
       });
     }
+
+    // Network info display
+    fetch('/network-info')
+      .then(response => response.json())
+      .then(data => {
+        const addresses = data.addresses;
+        const port = data.port;
+        let currentHost = window.location.hostname;
+        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          currentHost = addresses.find(addr => addr !== 'localhost' && addr !== '127.0.0.1') || currentHost;
+        }
+        document.getElementById('connectionInfo').innerHTML = `<span style="color: var(--accent-color);">Connected to:</span> http://${currentHost}:${port}`;
+      })
+      .catch(error => {
+        console.error('Error fetching network info:', error);
+        document.getElementById('connectionInfo').textContent = 'Error loading connection information';
+      });
   </script>
 </body>
 </html>

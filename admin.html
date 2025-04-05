@@ -307,6 +307,7 @@
     <label>Initiative:<br><input type="number" id="formInitiative"></label>
     <label>Name:<br><input type="text" id="formName"></label>
     <label>Icon URL:<br><input type="text" id="formIcon"></label>
+    <label style="display: none;" id="formDexLabel">DEX Modifier:<br><input type="number" id="formDexMod" value="0"></label>
     <label><input type="checkbox" id="formGroup"> Group Enemy (adds G)</label>
     <label><input type="checkbox" id="formNPC"> NPC Character</label>
     <label><input type="checkbox" id="formBoss"> Boss Enemy (highlighted)</label>
@@ -413,26 +414,51 @@
     }
 
     function submitEntryForm() {
-      const duplicateName = entries.some(e => e.name.trim().toLowerCase() === document.getElementById("formName").value.trim().toLowerCase());
-      const duplicateInit = entries.some(e => e.initiative === parseInt(document.getElementById("formInitiative").value));
-      if (duplicateName) return alert("That name already exists in the tracker.");
-      if (duplicateInit) return alert("That initiative value is already taken.");
       const initiative = parseInt(document.getElementById("formInitiative").value);
       let name = document.getElementById("formName").value;
       const icon = document.getElementById("formIcon").value;
       const isGroup = document.getElementById("formGroup").checked;
       const isNPC = document.getElementById("formNPC").checked;
       const isBoss = document.getElementById("formBoss").checked;
+      
       if (!initiative || !name) return;
+      
+      const duplicateName = entries.some(e => e.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (duplicateName) return alert("That name already exists in the tracker.");
+      
+      // Only check for ties if initiative is not 0
+      if (initiative !== 0) {
+        const tiedEntry = entries.find(e => e.initiative === initiative);
+        if (tiedEntry) {
+          // If there's a tie and either entry doesn't have a DEX modifier
+          if (!tiedEntry.dexMod || !document.getElementById("formDexMod").value) {
+            const dexLabel = document.getElementById("formDexLabel");
+            dexLabel.style.display = "block";
+            
+            // If this is the first time showing the DEX field
+            if (!document.getElementById("formDexMod").value) {
+              alert(`Initiative tie detected with ${tiedEntry.name}!\nPlease enter DEX modifiers for both:\n\n${name}: Enter in the form\n${tiedEntry.name}: ${tiedEntry.dexMod || '(needs to be set by editing after submission)'}`);
+              return;
+            }
+          }
+        }
+      }
+      
       if (isGroup) name += " (G)";
-      entries.push({ initiative, name, icon, isBoss, isNPC });
+      const dexMod = parseInt(document.getElementById("formDexMod").value) || 0;
+      
+      entries.push({ initiative, name, icon, isBoss, isNPC, dexMod });
       document.getElementById("formInitiative").value = "";
       document.getElementById("formName").value = "";
       document.getElementById("formIcon").value = "";
+      document.getElementById("formDexMod").value = "0";
+      document.getElementById("formDexLabel").style.display = "none";
       document.getElementById("formGroup").checked = false;
       document.getElementById("formBoss").checked = false;
       toggleForm(false);
       renderTable();
+      saveToLocalStorage();
+      broadcastState();
     }
 
     function exportSession() {
@@ -457,7 +483,14 @@
           
           // Handle session data format
           if (data.entries && Array.isArray(data.entries)) {
-            entries = data.entries;
+            entries = data.entries.map(entry => ({
+              initiative: entry.initiative || 0,
+              name: entry.name || '',
+              icon: entry.icon || '',
+              isBoss: !!entry.isBoss,
+              isNPC: !!entry.isNPC,
+              dexMod: entry.dexMod || 0  // Preserve DEX modifier
+            }));
             currentIndex = data.currentIndex || 0;
             round = data.round || 1;
           }
@@ -470,7 +503,8 @@
                   name: item.name || '',
                   icon: item.icon || '',
                   isBoss: !!item.isBoss,
-                  isNPC: !!item.isNPC
+                  isNPC: !!item.isNPC,
+                  dexMod: item.dexMod || 0  // Preserve DEX modifier
                 };
               }
               return {
@@ -478,7 +512,8 @@
                 name: String(item),
                 icon: '',
                 isBoss: false,
-                isNPC: false
+                isNPC: false,
+                dexMod: 0  // Default DEX modifier for simple string entries
               };
             });
             currentIndex = 0;
@@ -488,7 +523,10 @@
           else {
             for (const key in data) {
               if (data.hasOwnProperty(key) && data[key].entries) {
-                entries = data[key].entries;
+                entries = data[key].entries.map(entry => ({
+                  ...entry,
+                  dexMod: entry.dexMod || 0  // Preserve DEX modifier
+                }));
                 currentIndex = data[key].currentIndex || 0;
                 round = data[key].round || 1;
                 break;
@@ -574,7 +612,14 @@
     }
 
     function toggleEdit(index) {
-      entries[index].editing = !entries[index].editing;
+      const entry = entries[index];
+      const tiedEntries = entries.filter(e => e.initiative === entry.initiative && e !== entry);
+      
+      if (tiedEntries.length > 0 && !entry.dexMod) {
+        alert(`This entry has initiative ties with: ${tiedEntries.map(e => e.name).join(', ')}\nPlease set DEX modifier to break the tie.`);
+      }
+      
+      entry.editing = !entry.editing;
       renderTable();
     }
 
@@ -591,7 +636,26 @@
         timerInterval = null;
       }
       
-      entries.sort((a, b) => b.initiative - a.initiative);
+      // Group entries by initiative to check for ties, excluding initiative 0
+      const initiativeGroups = {};
+      entries.forEach(entry => {
+        if (entry.initiative !== 0) {  // Skip initiative 0
+          if (!initiativeGroups[entry.initiative]) {
+            initiativeGroups[entry.initiative] = [];
+          }
+          initiativeGroups[entry.initiative].push(entry);
+        }
+      });
+      
+      // Sort with initiative as primary and DEX as tiebreaker
+      entries.sort((a, b) => {
+        const initDiff = b.initiative - a.initiative;
+        if (initDiff !== 0) return initDiff;
+        // Don't use DEX for initiative 0
+        if (a.initiative === 0 && b.initiative === 0) return 0;
+        return (b.dexMod || 0) - (a.dexMod || 0);
+      });
+      
       const tbody = document.getElementById("trackerBody");
       tbody.innerHTML = "";
       entries.forEach((entry, i) => {
@@ -600,6 +664,12 @@
         if (i === currentIndex) {
           tr.classList.add("active");
           setTimeout(() => tr.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
+        
+        // Add visual indicator for initiative ties
+        const hasTie = entry.initiative !== 0 && initiativeGroups[entry.initiative] && initiativeGroups[entry.initiative].length > 1;
+        if (hasTie) {
+          tr.style.borderLeft = "4px solid #ffdd57";
         }
 
         const tdIcon = document.createElement("td");
@@ -613,14 +683,15 @@
         const tdActions = document.createElement("td");
 
         if (entry.editing) {
-          tdInit.innerHTML = `<input type='number' value='${entry.initiative}' onchange='entries[${i}].initiative=parseInt(this.value)' />`;
+          tdInit.innerHTML = `<input type='number' value='${entry.initiative}' onchange='entries[${i}].initiative=parseInt(this.value)' />` +
+                            `<br><small>DEX: <input type='number' value='${entry.dexMod || 0}' style='width:50px' onchange='entries[${i}].dexMod=parseInt(this.value)' /></small>`;
           tdName.innerHTML = `<input type='text' value='${entry.name}' onchange='entries[${i}].name=this.value' />` +
-                           `<br><input type='text' value='${entry.icon}' onchange='entries[${i}].icon=this.value' placeholder='Icon URL'/>`;
-          tdActions.innerHTML = `<button class='btn' onclick='toggleEdit(${i})'>💾</button><button class='btn' onclick='deleteEntry(${i})'>❌</button>`;
+                             `<br><input type='text' value='${entry.icon}' onchange='entries[${i}].icon=this.value' placeholder='Icon URL'/>`;
+          tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>💾</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
         } else {
-          tdInit.textContent = entry.initiative;
+          tdInit.innerHTML = `${entry.initiative}${entry.initiative !== 0 ? `<br><small>DEX: ${entry.dexMod || 0}</small>` : ''}`;
           tdName.textContent = entry.name;
-          tdActions.innerHTML = `<button class='btn' onclick='toggleEdit(${i})'>✏️</button><button class='btn' onclick='deleteEntry(${i})'>❌</button>`;
+          tdActions.innerHTML = `<button class='btn' style='font-size: 0.85rem;' onclick='toggleEdit(${i})'>✏️</button> <button class='btn' style='font-size: 0.85rem;' onclick='deleteEntry(${i})'>❌</button>`;
         }
 
         tr.appendChild(tdIcon);

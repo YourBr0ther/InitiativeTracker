@@ -84,6 +84,11 @@ const wss = new WebSocket.Server({ server });
 
 // Store connected clients
 const clients = new Set();
+let currentState = {
+  entries: [],
+  currentIndex: 0,
+  round: 1
+};
 
 // Handle WebSocket connections
 wss.on('connection', (ws, req) => {
@@ -94,14 +99,37 @@ wss.on('connection', (ws, req) => {
   clients.add(ws);
   console.log(`${isAdmin ? 'Admin' : 'User'} connected. Total clients:`, clients.size);
 
+  // Send current state to newly connected client
+  ws.send(JSON.stringify({
+    type: 'sync',
+    ...currentState,
+    clientId: 'server'
+  }));
+
   // Handle messages from clients
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
       
       // Only allow state updates from admin connections
-      if (data.type === 'sync' && (!ws.isAdmin)) {
+      if (!ws.isAdmin) {
+        console.log('Rejected non-admin update attempt');
+        // Send current state back to non-admin client to force sync
+        ws.send(JSON.stringify({
+          type: 'sync',
+          ...currentState,
+          clientId: 'server'
+        }));
         return;
+      }
+      
+      // Update current state if message is from admin
+      if (data.type === 'sync') {
+        currentState = {
+          entries: data.entries,
+          currentIndex: data.currentIndex,
+          round: data.round
+        };
       }
       
       // Broadcast the message to all connected clients
